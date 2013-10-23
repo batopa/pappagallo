@@ -35,7 +35,7 @@ var earify = {
 	config: {
 		user: "riotta",
 		proxyURL : "http://xho.bedita.net/var/earify-twitter-proxy.php?user=",
-		apiURL : "http://tts-api.com/tts.mp3?", // unused
+		apiURL : "api.php", // unused
 		lang : "it",
 		messageTimeout : 5000,
 		autoUpdateEvery : 15000, // ms
@@ -365,17 +365,38 @@ var earify = {
 		audio.play();
 		console.log("6. play: " + audio.src);
 */
-		earify.playingMessage = true;
-		try {
-			meSpeak.speak(t, { speed: 150, pitch: 40, wordgap: 5 }, function() {
+
+		$.ajax({
+			url: earify.config.apiURL,
+			type: 'POST',
+			dataType: 'json',
+			data: {
+				text: t
+			}
+		})
+		.done(function(response) {
+			var audio = new Audio();
+			audio.src = response.src;
+			audio.play();
+			console.log("6. play: " + audio.src);
+		})
+		.fail(function() {
+			console.error('something went wrong, fallback to meSpeak');
+			// fallback to meSpeak
+			earify.playingMessage = true;
+			try {
+				meSpeak.speak(t, { speed: 150, pitch: 40, wordgap: 5 }, function() {
+					earify.playingMessage = false;
+					earify.lastTweetId = earify.originalTweet.id;
+				});
+			} catch (e) {
 				earify.playingMessage = false;
-				earify.lastTweetId = earify.originalTweet.id;
-			});
-		} catch (e) {
-			earify.playingMessage = false;
-			console.error('error: ' +  e.name + " - " + e.message);
-			earify.triggerError('Bourpp, ho mangiato pesante. Non riesco a ripetere il twiit.');
-		}
+				console.error('error: ' +  e.name + " - " + e.message);
+				earify.triggerError('Bourpp, ho mangiato pesante. Non riesco a ripetere il twiit.');
+			}
+		});
+
+		
 	},
 
 
